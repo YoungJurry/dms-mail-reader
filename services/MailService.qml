@@ -20,6 +20,7 @@ Singleton {
     property bool readingContent: false
     property bool readOk: false
     property string readError: ""
+    property bool currentEmailMarkedSeen: false
     property var currentEmail: null
 
     // --- Config (set by Widget from pluginData) ---
@@ -70,9 +71,17 @@ Singleton {
         root.readingContent = true;
         root.readOk = false;
         root.readError = "";
+        root.currentEmailMarkedSeen = false;
         root.currentEmail = null;
         readProc.messageId = messageId;
         readProc.running = true;
+    }
+
+    function openAttachment(path) {
+        if (!path || path.length === 0)
+            return;
+        attachmentProc.command = ["xdg-open", path];
+        attachmentProc.running = true;
     }
 
     Timer {
@@ -152,6 +161,11 @@ Singleton {
         running: false
     }
 
+    Process {
+        id: attachmentProc
+        running: false
+    }
+
     function _applyResult(text) {
         root.checking = false;
         var data = null;
@@ -221,6 +235,7 @@ Singleton {
 
         root.readOk = true;
         root.readError = "";
+        root.currentEmailMarkedSeen = data.markedSeen === true;
         root.currentEmail = {
             fromAddress: data.from || "",
             toAddress: data.to || "",
@@ -229,6 +244,7 @@ Singleton {
             body: data.body || "",
             attachments: data.attachments || []
         };
+        root.refresh();
     }
 
     function displaySender(sender) {

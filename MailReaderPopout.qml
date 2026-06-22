@@ -428,13 +428,66 @@ PopoutComponent {
                             wrapMode: Text.WordWrap
                         }
 
-                        StyledText {
+                        Column {
                             width: parent.width
+                            spacing: Theme.spacingXS
                             visible: Services.MailService.currentEmail && Services.MailService.currentEmail.attachments.length > 0
-                            text: Services.MailService.currentEmail ? ("Attachments: " + Services.MailService.currentEmail.attachments.join(", ")) : ""
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.surfaceVariantText
-                            wrapMode: Text.WordWrap
+
+                            StyledText {
+                                width: parent.width
+                                text: "Attachments"
+                                font.pixelSize: Theme.fontSizeSmall
+                                font.weight: Font.Bold
+                                color: Theme.surfaceVariantText
+                            }
+
+                            Repeater {
+                                model: Services.MailService.currentEmail ? Services.MailService.currentEmail.attachments : []
+
+                                delegate: Rectangle {
+                                    width: parent.width
+                                    implicitHeight: 34
+                                    radius: Theme.cornerRadius
+                                    color: attachmentMouse.containsMouse ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
+                                    border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.4)
+                                    border.width: 1
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: Theme.spacingS
+                                        anchors.rightMargin: Theme.spacingS
+                                        spacing: Theme.spacingS
+
+                                        DankIcon {
+                                            name: "attach_file"
+                                            size: 16
+                                            color: Theme.primary
+                                        }
+
+                                        StyledText {
+                                            Layout.fillWidth: true
+                                            text: modelData.name || "attachment"
+                                            font.pixelSize: Theme.fontSizeSmall
+                                            color: Theme.surfaceText
+                                            elide: Text.ElideRight
+                                        }
+
+                                        StyledText {
+                                            text: modelData.size ? Math.ceil(modelData.size / 1024) + " KB" : ""
+                                            font.pixelSize: 10
+                                            color: Theme.surfaceVariantText
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: attachmentMouse
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: Services.MailService.openAttachment(modelData.path || "")
+                                    }
+                                }
+                            }
                         }
 
                         Rectangle {

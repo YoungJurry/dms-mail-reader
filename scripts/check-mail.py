@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""IMAP mail checker for the DMS Mail Checker plugin.
+"""IMAP mail checker/reader for the DMS Mail Reader plugin.
 
 Reads a single-line JSON config from stdin and prints a JSON result to
-stdout. Mailboxes are opened read-only and messages are fetched with
-BODY.PEEK, so nothing is ever marked as read.
+stdout. Listing opens the mailbox read-only. Reading a message fetches it
+with BODY.PEEK and then explicitly marks that message as Seen.
 
 Config:
     {"limit": 20, "accounts": [{"name": "...", "host": "...", "port": "993",
@@ -19,15 +19,19 @@ Result for list:
 
 Result for read:
     {"ok": true, "error": "", "from": "...", "to": "...", "date": "...",
-     "subject": "...", "body": "...", "attachments": ["file.pdf"]}
+     "subject": "...", "body": "...", "markedSeen": true,
+     "attachments": [{"name": "file.pdf", "path": "/tmp/...", "size": 1234}]}
 """
 
+import hashlib
 import html
 import imaplib
 import json
+import os
 import re
 import subprocess
 import sys
+import tempfile
 from email import policy
 from email.header import decode_header, make_header
 from email.parser import BytesHeaderParser, BytesParser
@@ -202,16 +206,58 @@ def extract_body(message):
     return body
 
 
-def get_attachments(message):
-    """Get list of attachment filenames."""
+def safe_filename(value):
+    """Decode and sanitize a MIME filename."""
+    filename = decode_mime(value or "").strip()
+    filename = os.path.basename(filename)
+    filename = re.sub(r"[\\/\x00-\x1f]", "_", filename)
+    return filename or "attachment"
+
+
+def save_attachments(message, account, message_id):
+    """Save attachments to a temporary directory and return metadata."""
     if not message.is_multipart():
         return []
-    names = []
-    for part in message.walk():
+
+    user_key = account.get("username") or account.get("name") or "account"
+    digest = hashlib.sha256(f"{user_key}:{message_id}".encode()).hexdigest()[:16]
+    base_dir = os.path.join(tempfile.gettempdir(), "mailReader-attachments", digest)
+    os.makedirs(base_dir, exist_ok=True)
+
+    attachments = []
+    used_names = set()
+    for index, part in enumerate(message.walk(), start=1):
+        if part.is_multipart():
+            continue
         filename = part.get_filename()
-        if filename:
-            names.append(filename)
-    return names
+        disposition = (part.get_content_disposition() or "").lower()
+        if not filename and disposition != "attachment":
+            continue
+
+        name = safe_filename(filename or f"attachment-{index}")
+        root_name, ext = os.path.splitext(name)
+        final_name = name
+        suffix = 2
+        while final_name in used_names:
+            final_name = f"{root_name}-{suffix}{ext}"
+            suffix += 1
+        used_names.add(final_name)
+
+        payload = part.get_payload(decode=True)
+        if payload is None:
+            continue
+
+        path = os.path.join(base_dir, final_name)
+        with open(path, "wb") as handle:
+            handle.write(payload)
+
+        attachments.append({
+            "name": final_name,
+            "path": path,
+            "size": len(payload),
+            "contentType": part.get_content_type(),
+        })
+    return attachments
 
 
 def format_date(value):
@@ -235,26 +281,34 @@ def read_account_message(account, message_id):
         "subject": "",
         "body": "",
         "attachments": [],
+        "markedSeen": False,
     }
     conn = None
     try:
         conn = connect_to_imap(account)
-        conn.select(account.get("folder") or "INBOX", readonly=True)
+        # Open read-write so clicking a message can behave like a normal mail
+        # client and mark it as read on the server.
+        conn.select(account.get("folder") or "INBOX", readonly=False)
 
-        # Fetch full message
-        status, fetched = conn.uid("fetch", message_id.encode(), "(BODY.PEEK[])")
+        # Fetch full message without implicitly setting Seen. We explicitly set
+        # Seen afterwards so the behavior is deliberate and easy to change.
+        uid = message_id.encode()
+        status, fetched = conn.uid("fetch", uid, "(BODY.PEEK[])")
         if status != "OK" or not fetched or not isinstance(fetched[0], tuple):
             raise RuntimeError("Cannot fetch message")
 
         raw = fetched[0][1]
         message = BytesParser(policy=policy.default).parsebytes(raw)
 
+        store_status, _ = conn.uid("store", uid, "+FLAGS.SILENT", "(\\Seen)")
+        result["markedSeen"] = store_status == "OK"
+
         result["from"] = decode_mime(message.get("From", ""))
         result["to"] = decode_mime(message.get("To", ""))
         result["date"] = format_date(message.get("Date", ""))
         result["subject"] = decode_mime(message.get("Subject", "")) or "(no subject)"
         result["body"] = extract_body(message)
-        result["attachments"] = get_attachments(message)
+        result["attachments"] = save_attachments(message, account, message_id)
         result["ok"] = True
     except Exception as exc:
         result["error"] = str(exc)[:300]
