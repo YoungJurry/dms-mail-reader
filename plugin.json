@@ -1,0 +1,14 @@
+{
+  "id": "mailReader",
+  "name": "Mail Reader",
+  "description": "IMAP mail reader for DankMaterialShell: bar indicator with unread count, popout with message list, and built-in email content viewer. Read emails directly inside the shell without opening a separate mail client.",
+  "version": "1.0.0",
+  "author": "youngshine",
+  "icon": "mail",
+  "type": "widget",
+  "component": "./MailReaderWidget.qml",
+  "settings": "./MailReaderSettings.qml",
+  "capabilities": ["dankbar-widget", "control-center-widget"],
+  "permissions": ["settings_read", "settings_write", "process"],
+  "requires": ">=1.2.0"
+}
