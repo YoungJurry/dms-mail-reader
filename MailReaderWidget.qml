@@ -43,9 +43,9 @@ PluginComponent {
 
                 DankIcon {
                     anchors.centerIn: parent
-                    name: root.hasMail ? "mail" : "drafts"
+                    name: root.hasError ? "mail_off" : (root.hasMail ? "mail" : "drafts")
                     size: Theme.iconSize - 6
-                    color: root.hasMail ? Theme.primary : Theme.surfaceText
+                    color: root.hasError ? Theme.error : (root.hasMail ? Theme.primary : Theme.surfaceText)
                 }
 
                 Rectangle {
@@ -56,8 +56,8 @@ PluginComponent {
                     width: 8
                     height: 8
                     radius: 4
-                    color: root.hasError ? Theme.error : Theme.primary
-                    visible: root.hasMail || root.hasError
+                    color: Theme.primary
+                    visible: root.hasMail
                 }
             }
 
@@ -83,9 +83,9 @@ PluginComponent {
 
                 DankIcon {
                     anchors.centerIn: parent
-                    name: root.hasMail ? "mail" : "drafts"
+                    name: root.hasError ? "mail_off" : (root.hasMail ? "mail" : "drafts")
                     size: Theme.iconSize - 6
-                    color: root.hasMail ? Theme.primary : Theme.surfaceText
+                    color: root.hasError ? Theme.error : (root.hasMail ? Theme.primary : Theme.surfaceText)
                 }
 
                 Rectangle {
@@ -96,8 +96,8 @@ PluginComponent {
                     width: 8
                     height: 8
                     radius: 4
-                    color: root.hasError ? Theme.error : Theme.primary
-                    visible: root.hasMail || root.hasError
+                    color: Theme.primary
+                    visible: root.hasMail
                 }
             }
 

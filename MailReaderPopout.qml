@@ -132,6 +132,8 @@ PopoutComponent {
                                         return "Not configured";
                                     if (Services.MailService.checking)
                                         return "Checking...";
+                                    if (!Services.MailService.ok && Services.MailService.lastError.length > 0)
+                                        return "Connection error";
                                     return Services.MailService.unreadCount + " unread, " + Services.MailService.messages.length + " shown";
                                 }
                                 font.pixelSize: Theme.fontSizeSmall
