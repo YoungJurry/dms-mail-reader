@@ -9,7 +9,7 @@ PluginSettings {
 
     StyledText {
         width: parent.width
-        text: "Mail Checker"
+        text: "Mail Reader"
         font.pixelSize: Theme.fontSizeLarge
         font.weight: Font.Bold
         color: Theme.surfaceText
@@ -17,7 +17,7 @@ PluginSettings {
 
     StyledText {
         width: parent.width
-        text: "Checks an IMAP mailbox in read-only mode. Messages are fetched with BODY.PEEK so they are not marked as read. Click a message to read its full content inside this plugin."
+        text: "Lists an IMAP mailbox without changing message state. Opening a message displays its content here and marks it as read on the server."
         font.pixelSize: Theme.fontSizeSmall
         color: Theme.surfaceVariantText
         wrapMode: Text.WordWrap
@@ -69,7 +69,7 @@ PluginSettings {
     StringSetting {
         settingKey: "passwordCommand"
         label: "Password Command"
-        description: "Shell command that prints the password, e.g. secret-tool lookup service imap account you@example.com"
+        description: "Shell command that prints the password. Use a secret manager such as secret-tool or pass; do not place the password directly in this field."
         defaultValue: ""
         placeholder: "secret-tool lookup service imap account you@example.com"
     }

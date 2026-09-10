@@ -8,28 +8,34 @@ PluginComponent {
     id: root
 
     readonly property int unread: Services.MailService.unreadCount
-    readonly property bool hasMail: unread > 0
+    readonly property bool hasMail: Services.MailService.ok && unread > 0
     readonly property bool hasError: Services.MailService.configured && !Services.MailService.ok && Services.MailService.lastError.length > 0
 
     Component.onCompleted: applySettings()
     onPluginDataChanged: applySettings()
 
     function applySettings() {
-        var s = Services.MailService;
-        s.accountName = pluginData.accountName || "";
-        s.imapHost = pluginData.imapHost || "";
-        s.imapPort = pluginData.imapPort || "";
-        s.security = pluginData.security || "ssl";
-        s.username = pluginData.username || "";
-        s.passwordCommand = pluginData.passwordCommand || "";
-        s.folder = pluginData.folder || "INBOX";
-        s.displayLimit = pluginData.displayLimit !== undefined ? parseInt(pluginData.displayLimit) : 20;
-        if (isNaN(s.displayLimit) || s.displayLimit < 0)
-            s.displayLimit = 20;
-        s.pollInterval = pluginData.pollInterval !== undefined ? parseInt(pluginData.pollInterval) : 60;
-        if (isNaN(s.pollInterval) || s.pollInterval < 0)
-            s.pollInterval = 60;
-        s.notifyOnNew = pluginData.notifyOnNew !== false;
+        var displayLimit = pluginData.displayLimit !== undefined
+                ? parseInt(pluginData.displayLimit) : 20;
+        if (isNaN(displayLimit) || displayLimit < 0)
+            displayLimit = 20;
+        var pollInterval = pluginData.pollInterval !== undefined
+                ? parseInt(pluginData.pollInterval) : 60;
+        if (isNaN(pollInterval) || pollInterval < 0)
+            pollInterval = 60;
+
+        Services.MailService.configure({
+            accountName: pluginData.accountName || "",
+            imapHost: pluginData.imapHost || "",
+            imapPort: pluginData.imapPort || "",
+            security: pluginData.security || "ssl",
+            username: pluginData.username || "",
+            passwordCommand: pluginData.passwordCommand || "",
+            folder: pluginData.folder || "INBOX",
+            displayLimit: displayLimit,
+            pollInterval: pollInterval,
+            notifyOnNew: pluginData.notifyOnNew !== false
+        });
     }
 
     horizontalBarPill: Component {

@@ -31,7 +31,7 @@ PopoutComponent {
     function fmtAgo(timestamp) {
         if (!timestamp)
             return "";
-        var diff = Math.max(0, Math.floor((Date.now() - timestamp * 1000) / 1000));
+        var diff = Math.max(0, Math.floor((root.nowMs - timestamp * 1000) / 1000));
         if (diff < 60)
             return "now";
         if (diff < 3600)
@@ -50,6 +50,7 @@ PopoutComponent {
     function backToList() {
         root.detailMode = false;
         root.selectedMessage = null;
+        Services.MailService.cancelRead();
     }
 
     Item {
@@ -133,7 +134,7 @@ PopoutComponent {
                                     if (Services.MailService.checking)
                                         return "Checking...";
                                     if (!Services.MailService.ok && Services.MailService.lastError.length > 0)
-                                        return "Connection error";
+                                        return "Check failed";
                                     return Services.MailService.unreadCount + " unread, " + Services.MailService.messages.length + " shown";
                                 }
                                 font.pixelSize: Theme.fontSizeSmall
@@ -531,7 +532,7 @@ PopoutComponent {
                             var t = Services.MailService.lastChecked;
                             if (!t)
                                 return "";
-                            var diff = Math.max(0, Math.floor((Date.now() - t.getTime()) / 1000));
+                            var diff = Math.max(0, Math.floor((root.nowMs - t.getTime()) / 1000));
                             if (diff < 60)
                                 return "Checked just now";
                             return "Checked " + Math.floor(diff / 60) + "m ago";
