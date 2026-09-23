@@ -65,6 +65,7 @@ Open DMS Settings → Plugins → Mail Reader and configure:
 | Display Mail Count | Number of messages to show. `0` = all, `x` = latest x |
 | Check Interval | Auto-check interval in seconds. `0` = manual only (refresh on open) |
 | Notifications | Enable/disable desktop notifications |
+| Notify on Startup if Unread | Notify immediately on startup if there are unread emails from while the computer was off (enabled by default) |
 | Persistent Notifications | Keep notifications on screen until manually closed (enabled by default) |
 
 ### Password Command Examples

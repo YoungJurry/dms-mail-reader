@@ -34,6 +34,7 @@ Singleton {
     property int displayLimit: 20
     property int pollInterval: 60
     property bool notifyOnNew: true
+    property bool notifyOnStartup: true
     property bool persistentNotification: true
     property bool popoutOpen: false
 
@@ -76,6 +77,7 @@ Singleton {
         root.displayLimit = config.displayLimit;
         root.pollInterval = config.pollInterval;
         root.notifyOnNew = config.notifyOnNew;
+        root.notifyOnStartup = config.notifyOnStartup;
         root.persistentNotification = config.persistentNotification;
         root._mailboxKey = nextMailboxKey;
 
@@ -300,13 +302,18 @@ Singleton {
         var fresh = acc.newMessages || [];
         root._uidValidity = String(acc.uidValidity || "");
         root._lastUid = Number(acc.latestUid || 0);
+        var isFirst = root._firstCheck;
         if (root._firstCheck) {
             root._firstCheck = false;
-            return;
         }
+
         var newCount = Number(acc.newCount || 0);
-        if (root.notifyOnNew && newCount > 0)
+        if (isFirst) {
+            if (root.notifyOnStartup && acc.unread > 0)
+                _notifyStartup(acc.unread, root.messages);
+        } else if (root.notifyOnNew && newCount > 0) {
             _notify(fresh, newCount);
+        }
     }
 
     function _applyReadResult(text, messageId, requestRevision) {
@@ -350,6 +357,37 @@ Singleton {
     function displaySender(sender) {
         var m = sender.match(/^\s*"?([^"<]+?)"?\s*<.*>\s*$/);
         return m ? m[1] : sender;
+    }
+
+    function _notifyStartup(unreadCount, messages) {
+        var title;
+        var body;
+        var list = messages || [];
+        if (unreadCount === 1) {
+            if (list.length >= 1) {
+                title = "Unread mail from " + displaySender(list[0].sender);
+                body = list[0].subject;
+            } else {
+                title = "1 unread message";
+                body = "";
+            }
+        } else {
+            title = unreadCount + " unread messages";
+            var lines = [];
+            for (var i = 0; i < Math.min(list.length, Math.min(unreadCount, 5)); i++)
+                lines.push(displaySender(list[i].sender) + ": " + list[i].subject);
+            body = lines.join("\n");
+        }
+        var icon = root._iconPath || "mail-unread";
+        var cmd = [
+            "notify-send", "-a", "Mail Reader", "-i", icon
+        ];
+        if (root.persistentNotification) {
+            cmd.push("-t", "0");
+            cmd.push("-h", "boolean:resident:true");
+        }
+        cmd.push(title, body);
+        Quickshell.execDetached(cmd);
     }
 
     function _notify(fresh, newCount) {

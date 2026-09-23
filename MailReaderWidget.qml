@@ -35,6 +35,7 @@ PluginComponent {
             displayLimit: displayLimit,
             pollInterval: pollInterval,
             notifyOnNew: pluginData.notifyOnNew !== false,
+            notifyOnStartup: pluginData.notifyOnStartup !== false,
             persistentNotification: pluginData.persistentNotification !== false
         });
     }

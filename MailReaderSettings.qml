@@ -109,6 +109,13 @@ PluginSettings {
     }
 
     ToggleSetting {
+        settingKey: "notifyOnStartup"
+        label: "Notify on Startup if Unread"
+        description: "Notify immediately upon login if there are unread emails from while the computer was off"
+        defaultValue: true
+    }
+
+    ToggleSetting {
         settingKey: "persistentNotification"
         label: "Persistent Notifications"
         description: "Keep mail notifications on screen until manually closed"
