@@ -34,7 +34,8 @@ PluginComponent {
             folder: pluginData.folder || "INBOX",
             displayLimit: displayLimit,
             pollInterval: pollInterval,
-            notifyOnNew: pluginData.notifyOnNew !== false
+            notifyOnNew: pluginData.notifyOnNew !== false,
+            persistentNotification: pluginData.persistentNotification !== false
         });
     }
 

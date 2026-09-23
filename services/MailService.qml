@@ -34,6 +34,7 @@ Singleton {
     property int displayLimit: 20
     property int pollInterval: 60
     property bool notifyOnNew: true
+    property bool persistentNotification: true
     property bool popoutOpen: false
 
     // Server UID state gives notifications a stable baseline independent of
@@ -73,6 +74,7 @@ Singleton {
         root.displayLimit = config.displayLimit;
         root.pollInterval = config.pollInterval;
         root.notifyOnNew = config.notifyOnNew;
+        root.persistentNotification = config.persistentNotification;
         root._mailboxKey = nextMailboxKey;
 
         if (queryChanged)
@@ -366,8 +368,14 @@ Singleton {
                 lines.push(displaySender(fresh[i].sender) + ": " + fresh[i].subject);
             body = lines.join("\n");
         }
-        Quickshell.execDetached([
-            "notify-send", "-a", "Mail Reader", "-i", "mail-unread", title, body
-        ]);
+        var cmd = [
+            "notify-send", "-a", "Mail Reader", "-i", "mail-unread"
+        ];
+        if (root.persistentNotification) {
+            cmd.push("-t", "0");
+            cmd.push("-h", "boolean:resident:true");
+        }
+        cmd.push(title, body);
+        Quickshell.execDetached(cmd);
     }
 }

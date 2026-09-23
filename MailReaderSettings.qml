@@ -107,4 +107,11 @@ PluginSettings {
         description: "Send a desktop notification when new mail arrives"
         defaultValue: true
     }
+
+    ToggleSetting {
+        settingKey: "persistentNotification"
+        label: "Persistent Notifications"
+        description: "Keep mail notifications on screen until manually closed"
+        defaultValue: true
+    }
 }

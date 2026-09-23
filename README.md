@@ -13,7 +13,7 @@ Forked from [Rocho's mailChecker](https://github.com/Rocho-EL-Locho/dms-mail-che
 - **Built-in email content viewer** — click any message to read its full content (Subject, From, To, Date, Attachments, Body) directly inside the plugin
 - **Server-side read status** — clicking a message marks it as read on the IMAP server with `\\Seen`
 - **Attachment support** — attachments are saved to a temporary local directory and can be opened with `xdg-open`
-- **Desktop notifications** for new mail
+- **Desktop notifications** for new mail (optional persistent mode keeps notifications on-screen until dismissed)
 - **Configurable display count** — show all messages or only the latest N
 - **Flexible polling** — auto-check every N seconds, or set to 0 for manual-only refresh
 - **Safe listing** — message lists are fetched read-only with `BODY.PEEK` and never change mailbox state
@@ -65,6 +65,7 @@ Open DMS Settings → Plugins → Mail Reader and configure:
 | Display Mail Count | Number of messages to show. `0` = all, `x` = latest x |
 | Check Interval | Auto-check interval in seconds. `0` = manual only (refresh on open) |
 | Notifications | Enable/disable desktop notifications |
+| Persistent Notifications | Keep notifications on screen until manually closed (enabled by default) |
 
 ### Password Command Examples
 
