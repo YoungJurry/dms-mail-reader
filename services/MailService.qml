@@ -53,6 +53,8 @@ Singleton {
 
     readonly property string _scriptPath: decodeURIComponent(
             Qt.resolvedUrl("../scripts/check-mail.py").toString()).replace("file://", "")
+    readonly property string _iconPath: decodeURIComponent(
+            Qt.resolvedUrl("../assets/mail-notification.png").toString()).replace("file://", "")
 
     function configure(config) {
         var host = (config.imapHost || "").trim();
@@ -368,8 +370,9 @@ Singleton {
                 lines.push(displaySender(fresh[i].sender) + ": " + fresh[i].subject);
             body = lines.join("\n");
         }
+        var icon = root._iconPath || "mail-unread";
         var cmd = [
-            "notify-send", "-a", "Mail Reader", "-i", "mail-unread"
+            "notify-send", "-a", "Mail Reader", "-i", icon
         ];
         if (root.persistentNotification) {
             cmd.push("-t", "0");

@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <!-- 背景渐变：现代蓝紫/靛蓝渐变 -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="50%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+
+    <!-- 信封主体渐变 -->
+    <linearGradient id="envGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F1F5F9"/>
+    </linearGradient>
+
+    <!-- 信封翻盖渐变 -->
+    <linearGradient id="flapGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E2E8F0"/>
+    </linearGradient>
+
+    <!-- 侧翼阴影 -->
+    <linearGradient id="foldShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.0"/>
+    </linearGradient>
+
+    <!-- 新邮件提醒红点渐变 -->
+    <linearGradient id="dotGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EF4444"/>
+      <stop offset="100%" stop-color="#DC2626"/>
+    </linearGradient>
+
+    <!-- 微妙外阴影 -->
+    <filter id="dropShadow" x="-10%" y="-10%" width="120%" height="125%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0F172A" flood-opacity="0.25"/>
+    </filter>
+
+    <filter id="envShadow" x="-10%" y="-10%" width="120%" height="130%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- 1. 圆角应用底座 (Squircle / App Icon) -->
+  <rect x="8" y="8" width="112" height="112" rx="26" ry="26" fill="url(#bgGrad)" filter="url(#dropShadow)"/>
+
+  <!-- 顶部微光高光 -->
+  <path d="M 34 8 Q 64 12 94 8 Q 116 8 118 28 C 118 20 110 10 94 9 L 34 9 C 18 10 10 20 10 28 Q 12 8 34 8 Z" fill="#FFFFFF" opacity="0.18"/>
+
+  <!-- 2. 信封主体 -->
+  <g filter="url(#envShadow)">
+    <!-- 信封底矩形 -->
+    <rect x="24" y="38" width="80" height="54" rx="8" ry="8" fill="url(#envGrad)"/>
+
+    <!-- 信封翻盖折线与底衬（信纸露头） -->
+    <rect x="30" y="32" width="68" height="24" rx="4" ry="4" fill="#FFFFFF" opacity="0.95"/>
+    <!-- 信纸横线装饰 -->
+    <line x1="38" y1="38" x2="60" y2="38" stroke="#94A3B8" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="38" y1="44" x2="74" y2="44" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- 信封下半部主体口袋 -->
+    <path d="M 24 48 L 64 74 L 104 48 L 104 84 C 104 88.4 100.4 92 96 92 L 32 92 C 27.6 92 24 88.4 24 84 Z" fill="url(#envGrad)"/>
+
+    <!-- 折角阴影 -->
+    <path d="M 24 48 L 64 74 L 104 48 L 98 48 L 64 70 L 30 48 Z" fill="url(#foldShadow)"/>
+
+    <!-- 侧翼折痕细线 -->
+    <path d="M 24 88 L 54 64" stroke="#CBD5E1" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M 104 88 L 74 64" stroke="#CBD5E1" stroke-width="1.2" stroke-linecap="round"/>
+
+    <!-- 上翻盖（打开或半折状态） -->
+    <path d="M 24 46 C 24 41.6 27.6 38 32 38 L 96 38 C 100.4 38 104 41.6 104 46 L 64 73 Z" fill="url(#flapGrad)"/>
+    <path d="M 24 46 L 64 73 L 104 46" stroke="#E2E8F0" stroke-width="1.5" fill="none"/>
+  </g>
+
+  <!-- 3. 右上角未读消息徽标红点 -->
+  <circle cx="98" cy="28" r="11" fill="url(#dotGrad)"/>
+  <circle cx="98" cy="28" r="11" stroke="#FFFFFF" stroke-width="2.5" fill="none"/>
+  <!-- 小感叹号或数字 1 -->
+  <circle cx="98" cy="24.5" r="1.5" fill="#FFFFFF"/>
+  <rect x="96.8" y="27.5" width="2.4" height="4" rx="1.2" fill="#FFFFFF"/>
+</svg>
