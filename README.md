@@ -18,10 +18,12 @@ Forked from [Rocho's mailChecker](https://github.com/Rocho-EL-Locho/dms-mail-che
 - **Flexible polling** — auto-check every N seconds, or set to 0 for manual-only refresh
 - **Safe listing** — message lists are fetched read-only with `BODY.PEEK` and never change mailbox state
 - **Password via command** — use `secret-tool`, `pass`, or another secret manager instead of storing the password in plugin settings
+- **Gmail OAuth2** — personal Gmail accounts can authorize via a browser without enabling two-step verification or creating an app password
 
 ## Dependencies
 
 - `python3` (with `imaplib` — included in standard library)
+- Gmail OAuth uses Python standard library only; no `secret-tool` or keyring required
 - `notify-send` (usually provided by `libnotify`)
 - `xdg-open` (usually provided by `xdg-utils`)
 - A Wayland compositor supported by DMS (Hyprland, Niri, etc.)
@@ -56,8 +58,8 @@ Open DMS Settings → Plugins → Mail Reader and configure:
 | Setting | Description |
 |---------|-------------|
 | Account Name | Display name (e.g. "Work", "Personal") |
-| Authentication | Password command (default), or Outlook.com OAuth2 |
-| Outlook Application (client) ID | Your public Entra app ID; only for Outlook.com OAuth2 |
+| Authentication | Password command (default) or Gmail OAuth2 |
+| Google OAuth Client ID | Google Desktop client ID for Gmail |
 | IMAP Host | Your IMAP server hostname |
 | IMAP Port | Default: 993 (SSL) or 143 (STARTTLS) |
 | Connection Security | SSL/TLS or STARTTLS |
@@ -84,39 +86,38 @@ secret-tool lookup service imap account you@example.com
 
 Do not put an inline password in this field: plugin settings are stored on disk. Keep the secret in a credential manager and let the command retrieve it at runtime.
 
-### Outlook.com OAuth2 (personal Outlook/Hotmail/Live accounts)
+### Gmail OAuth2 (personal Gmail accounts)
 
-Outlook.com no longer accepts ordinary IMAP password login. This optional mode uses Microsoft's device-code sign-in and keeps tokens **only** in the user's unlocked Secret Service keyring (`secret-tool`, typically provided by `libsecret-tools`). Python standard library is sufficient; no client secret, Microsoft password, or token goes into DMS settings. Existing password-command accounts remain unchanged.
+**Yes, this requires the Gmail OAuth code in this version of the plugin.** Ordinary Gmail account passwords cannot be used as an IMAP `Password Command`; Google app passwords require two-step verification. OAuth does **not** require enabling two-step verification, though Google may ask you to confirm a sign-in. The plugin connects to Gmail with IMAP XOAUTH2; it does not use the Gmail API. You need your own Google OAuth client ID; there is no built-in shared Google app registration. The plugin uses the broad [`https://mail.google.com/` permission](https://developers.google.com/workspace/gmail/imap/xoauth2-protocol) mandated by Gmail IMAP, including access beyond reading. Only grant this to a client you trust. Personal Gmail accounts have IMAP enabled automatically; [there is no IMAP switch to turn on](https://support.google.com/mail/answer/7126229).
 
-1. [Register an application](https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app) in a Microsoft Entra tenant you control. You need access to an Entra tenant/app registrations (a personal Outlook.com mailbox alone may not grant this). Select **Personal Microsoft accounts only** under Supported account types. Under **Authentication → Advanced settings**, set **Allow public client flows** to **Yes** for device-code authentication. Do not create or enter a client secret. Copy the **Application (client) ID**. Microsoft may change its portal or app-registration requirements.
-2. If required, add the delegated IMAP permission `IMAP.AccessAsUser.All` for **Office 365 Exchange Online**; sign-in requests the full `https://outlook.office.com/IMAP.AccessAsUser.All` scope plus `offline_access` (for token refresh). Consent to these permissions during sign-in. This grants IMAP mailbox access, including marking messages read. If consent is denied or your tenant does not allow this registration, authorization cannot complete.
-3. In [Outlook.com settings](https://outlook.live.com/mail/0/options/mail/accounts/popImap), enable **Let devices and apps use IMAP** (Settings → Mail → Forwarding and IMAP). Set these plugin values:
+1. Sign in to [Google Cloud Console](https://console.cloud.google.com/) with the Gmail account. Create/select a project (you do **not** need an Azure subscription). Under **Google Auth Platform**, configure **Branding** (app name and contact email), **Audience → External**, and **Data Access** with `https://mail.google.com/`. If the app is in **Testing**, add your Gmail address under **Test users**. Under **Clients → Create client**, choose **Desktop app** (not Web application), and copy its **Client ID** (ends in `.apps.googleusercontent.com`). Download the **OAuth client JSON** from the Clients page; Google currently requires its Desktop `client_secret` at the token endpoint even with PKCE. Google may change the console screens; follow their [desktop OAuth guide](https://developers.google.com/identity/protocols/oauth2/native-app).
+2. Configure DMS Settings → Plugins → Mail Reader:
 
    | Field | Value |
    | --- | --- |
-   | Authentication | Outlook.com OAuth2 |
-   | Account Name | Outlook (or any display name) |
-   | Outlook Application (client) ID | ID from step 1 |
-   | IMAP Host | `outlook.office365.com` |
+   | Authentication | Gmail OAuth2 |
+   | Account Name | Gmail (or any display name) |
+   | Google OAuth Client ID | Your Google Desktop client ID |
+   | IMAP Host | `imap.gmail.com` |
    | IMAP Port | `993` (or empty) |
    | Connection Security | SSL/TLS |
-   | Username | Full Outlook.com email address |
+   | Username | Full Gmail address, e.g. `you@gmail.com` |
    | Password Command | Empty |
    | Folder | `INBOX` |
 
-4. From this plugin directory in a terminal, with your keyring **unlocked**, run:
+3. From **the installed plugin directory** run:
 
    ```bash
-   python3 scripts/authorize-outlook.py --client-id YOUR-CLIENT-ID --username you@outlook.com
+   python3 scripts/authorize-gmail.py --client-json '/path/to/downloaded-client.json' --username 'you@gmail.com'
    ```
 
-   Open the URL printed by the command, enter its one-time code, and sign in with the **same** mailbox as the Username setting. The script stores the token in your keyring; no token is printed. Open/refresh the widget afterward. If authorization expires or is revoked, run the command again. Switching account or app ID requires authorizing that combination separately. Don't share the one-time code or tokens.
+   The script opens your browser (or prints a URL to open). Sign in with the **same** Gmail address and grant access. A temporary callback listens **only on `127.0.0.1`**; browser and script must be on the same machine. It checks Gmail IMAP access before saving the Desktop client secret and tokens under `~/.local/state/dms-mail-reader-gmail/` (or `$XDG_STATE_HOME/dms-mail-reader-gmail/`). That directory is owner-only (0700) and credential files are owner-only (0600) but **not encrypted at rest**. Protect your Linux login and backups. The Desktop app cannot keep a client secret truly confidential; it must not be hard-coded in the plugin or put in DMS settings. After successful authorization, you can delete the downloaded JSON. To reauthorize later, use `--client-id 'YOUR-ID.apps.googleusercontent.com'` instead of `--client-json` (the secret is already stored locally). Refresh the widget; if access is revoked, run this command again. Do not share tokens or authorization callback URLs. No Google password or token belongs in DMS settings.
 
-**Limitations:** This supports personal Outlook.com accounts (`/consumers` authority); work/school Microsoft 365 accounts and Gmail need different authentication flows. OAuth sign-in must be initiated in a terminal and requires your own app registration; it does not start automatically inside the DMS panel. A desktop Secret Service keyring and `secret-tool` are required. No live account sign-in is performed in CI tests.
+**Important for persistent access:** Google's [Testing status expires authorizations and refresh tokens after 7 days](https://support.google.com/cloud/answer/15549945?hl=en) for Gmail scopes. For ongoing **personal use**, set **Audience → Publishing status → In production** after setup; Google [allows personal-use apps with fewer than 100 users without verification](https://support.google.com/cloud/answer/13464323?hl=en), but expect an **unverified app** warning and a 100-new-user cap. Do not publish this plugin as an OAuth integration for a general audience without checking Google's verification and restricted-scope policies. This version was not tested with a live Google account in CI.
 
 ## How It Works
 
-- Uses Python's built-in `imaplib` to connect to your IMAP server; Outlook mode authenticates with SASL XOAUTH2 and refreshes tokens as needed
+- Uses Python's built-in `imaplib` to connect to your IMAP server; Gmail OAuth authenticates with SASL XOAUTH2 and refreshes tokens as needed
 - Configuration is passed to the helper over stdin, so it does not appear in the helper's process arguments
 - TLS certificates and hostnames are verified using the system CA store
 - Listing messages is read-only and fetches visible headers in one batch

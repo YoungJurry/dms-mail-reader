@@ -34,20 +34,20 @@ PluginSettings {
     SelectionSetting {
         settingKey: "authMethod"
         label: "Authentication"
-        description: "Use a password command for generic IMAP, or OAuth2 for Outlook.com"
+        description: "Use a password command for generic IMAP, or OAuth2 for Gmail"
         defaultValue: "password"
         options: [
             { label: "IMAP password command", value: "password" },
-            { label: "Outlook.com OAuth2", value: "outlook" }
+            { label: "Gmail OAuth2", value: "gmail" }
         ]
     }
 
     StringSetting {
         settingKey: "clientId"
-        label: "Outlook Application (client) ID"
-        description: "Outlook OAuth2 only. Register a public client in Microsoft Entra, then run scripts/authorize-outlook.py in a terminal. Never enter a client secret."
+        label: "Google OAuth Client ID"
+        description: "Gmail only: create a Google Desktop client ID, then run scripts/authorize-gmail.py in a terminal. See README; do not enter a client secret."
         defaultValue: ""
-        placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+        placeholder: "Google: 123-abc.apps.googleusercontent.com"
     }
 
     StringSetting {
@@ -88,7 +88,7 @@ PluginSettings {
     StringSetting {
         settingKey: "passwordCommand"
         label: "Password Command"
-        description: "Generic IMAP only: command that prints the password. Use secret-tool or pass; never store passwords directly in settings. Leave empty for Outlook OAuth2."
+        description: "Generic IMAP only: command that prints the password. Use secret-tool or pass; never store passwords directly in settings. Leave empty for OAuth2."
         defaultValue: ""
         placeholder: "secret-tool lookup service imap account you@example.com"
     }

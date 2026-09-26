@@ -43,7 +43,8 @@ from email.header import decode_header, make_header
 from email.parser import BytesHeaderParser, BytesParser
 from email.utils import parsedate_to_datetime
 
-from outlook_oauth import get_access_token, validate_client_id
+from gmail_oauth import get_access_token as get_gmail_access_token
+from gmail_oauth import validate_client_id as validate_gmail_client_id
 
 
 MAX_MESSAGE_BYTES = 50 * 1024 * 1024
@@ -84,15 +85,15 @@ def connect_to_imap(account):
     if not username:
         raise RuntimeError("No username configured")
     auth_method = account.get("authMethod") or "password"
-    if auth_method not in ("password", "outlook"):
+    if auth_method not in ("password", "gmail"):
         raise RuntimeError("Unknown authentication method")
-    if auth_method == "outlook":
-        if host.lower() != "outlook.office365.com":
-            raise RuntimeError("Outlook OAuth requires outlook.office365.com")
+    if auth_method == "gmail":
+        if host.lower() != "imap.gmail.com":
+            raise RuntimeError("Gmail OAuth requires imap.gmail.com")
         if str(account.get("security") or "ssl").lower() != "ssl":
-            raise RuntimeError("Outlook OAuth requires SSL/TLS")
-        validate_client_id(account.get("clientId"))
-        token = get_access_token(account["clientId"], username)
+            raise RuntimeError("Gmail OAuth requires SSL/TLS")
+        validate_gmail_client_id(account.get("clientId"))
+        token = get_gmail_access_token(account["clientId"], username)
     else:
         password = get_password(account)
 
@@ -116,14 +117,14 @@ def connect_to_imap(account):
             conn = imaplib.IMAP4_SSL(
                 host, port, ssl_context=context, timeout=20)
 
-        if auth_method == "outlook":
+        if auth_method == "gmail":
             # imaplib.authenticate base64-encodes this callback result itself.
             try:
                 conn.authenticate("XOAUTH2", lambda _: (
                     "user=" + username + "\x01auth=Bearer " + token + "\x01\x01").encode())
             except imaplib.IMAP4.error:
                 raise RuntimeError(
-                    "Outlook IMAP OAuth failed; verify the account, consent and IMAP access") from None
+                    "Gmail IMAP OAuth failed; verify the account, consent and IMAP access") from None
         else:
             conn.login(username, password)
         return conn

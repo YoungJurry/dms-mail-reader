@@ -113,13 +113,13 @@ class CheckMailTests(unittest.TestCase):
         self.assertTrue(context.check_hostname)
         connection.login.assert_called_once_with("me@example.com", "secret")
 
-    def test_outlook_connection_uses_xoauth2_without_password(self):
+    def test_gmail_connection_uses_xoauth2_without_password(self):
         connection = mock.Mock()
         account = self.account(
-            host="outlook.office365.com", authMethod="outlook",
-            clientId="01234567-89ab-cdef-0123-456789abcdef", passwordCommand="")
+            host="imap.gmail.com", authMethod="gmail",
+            clientId="123-abc.apps.googleusercontent.com", passwordCommand="")
         with mock.patch.object(check_mail, "get_password") as password, \
-                mock.patch.object(check_mail, "get_access_token", return_value="test-token"), \
+                mock.patch.object(check_mail, "get_gmail_access_token", return_value="gmail-token"), \
                 mock.patch.object(check_mail.imaplib, "IMAP4_SSL", return_value=connection):
             self.assertIs(check_mail.connect_to_imap(account), connection)
         password.assert_not_called()
@@ -127,15 +127,18 @@ class CheckMailTests(unittest.TestCase):
         method, callback = connection.authenticate.call_args.args
         self.assertEqual(method, "XOAUTH2")
         self.assertEqual(callback(b""),
-                         b"user=me@example.com\x01auth=Bearer test-token\x01\x01")
+                         b"user=me@example.com\x01auth=Bearer gmail-token\x01\x01")
 
-    def test_outlook_rejects_wrong_host_before_token_request(self):
-        account = self.account(authMethod="outlook",
-                               clientId="01234567-89ab-cdef-0123-456789abcdef")
-        with mock.patch.object(check_mail, "get_access_token") as token:
-            with self.assertRaisesRegex(RuntimeError, "outlook.office365.com"):
-                check_mail.connect_to_imap(account)
-            token.assert_not_called()
+    def test_gmail_rejects_wrong_host_and_security_before_token_request(self):
+        for overrides in ({"host": "imap.example.com"}, {"security": "starttls"}):
+            account = self.account(
+                host="imap.gmail.com", authMethod="gmail",
+                clientId="123-abc.apps.googleusercontent.com")
+            account.update(overrides)
+            with mock.patch.object(check_mail, "get_gmail_access_token") as token:
+                with self.assertRaisesRegex(RuntimeError, "Gmail OAuth requires"):
+                    check_mail.connect_to_imap(account)
+                token.assert_not_called()
 
     def test_starttls_connection_uses_verified_context(self):
         connection = mock.Mock()
