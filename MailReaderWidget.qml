@@ -26,6 +26,8 @@ PluginComponent {
 
         Services.MailService.configure({
             accountName: pluginData.accountName || "",
+            authMethod: pluginData.authMethod || "password",
+            clientId: pluginData.clientId || "",
             imapHost: pluginData.imapHost || "",
             imapPort: pluginData.imapPort || "",
             security: pluginData.security || "ssl",

@@ -19,6 +19,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Compile helper
-        run: python -m py_compile scripts/check-mail.py
+        run: python -m py_compile scripts/check-mail.py scripts/outlook_oauth.py scripts/authorize-outlook.py
       - name: Run unit tests
         run: python -m unittest discover -s tests -v

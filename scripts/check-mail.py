@@ -43,6 +43,8 @@ from email.header import decode_header, make_header
 from email.parser import BytesHeaderParser, BytesParser
 from email.utils import parsedate_to_datetime
 
+from outlook_oauth import get_access_token, validate_client_id
+
 
 MAX_MESSAGE_BYTES = 50 * 1024 * 1024
 ATTACHMENT_CACHE_MAX_AGE = 24 * 60 * 60
@@ -81,7 +83,18 @@ def connect_to_imap(account):
         raise RuntimeError("No IMAP host configured")
     if not username:
         raise RuntimeError("No username configured")
-    password = get_password(account)
+    auth_method = account.get("authMethod") or "password"
+    if auth_method not in ("password", "outlook"):
+        raise RuntimeError("Unknown authentication method")
+    if auth_method == "outlook":
+        if host.lower() != "outlook.office365.com":
+            raise RuntimeError("Outlook OAuth requires outlook.office365.com")
+        if str(account.get("security") or "ssl").lower() != "ssl":
+            raise RuntimeError("Outlook OAuth requires SSL/TLS")
+        validate_client_id(account.get("clientId"))
+        token = get_access_token(account["clientId"], username)
+    else:
+        password = get_password(account)
 
     security = str(account.get("security") or "ssl").strip().lower()
     if security not in ("ssl", "starttls"):
@@ -103,7 +116,16 @@ def connect_to_imap(account):
             conn = imaplib.IMAP4_SSL(
                 host, port, ssl_context=context, timeout=20)
 
-        conn.login(username, password)
+        if auth_method == "outlook":
+            # imaplib.authenticate base64-encodes this callback result itself.
+            try:
+                conn.authenticate("XOAUTH2", lambda _: (
+                    "user=" + username + "\x01auth=Bearer " + token + "\x01\x01").encode())
+            except imaplib.IMAP4.error:
+                raise RuntimeError(
+                    "Outlook IMAP OAuth failed; verify the account, consent and IMAP access") from None
+        else:
+            conn.login(username, password)
         return conn
     except Exception:
         if conn is not None:

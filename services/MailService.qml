@@ -25,6 +25,8 @@ Singleton {
 
     // --- Config (set by Widget from pluginData) ---
     property string accountName: ""
+    property string authMethod: "password"
+    property string clientId: ""
     property string imapHost: ""
     property string imapPort: ""
     property string security: "ssl"
@@ -61,13 +63,16 @@ Singleton {
         var host = (config.imapHost || "").trim();
         var user = (config.username || "").trim();
         var port = (config.imapPort || "").trim();
-        var nextMailboxKey = [host, port, config.security, user, config.folder].join("\n");
+        var nextMailboxKey = [host, port, config.security, user, config.folder,
+                              config.authMethod, config.clientId].join("\n");
         var mailboxChanged = root._mailboxKey !== nextMailboxKey;
         var queryChanged = mailboxChanged
                 || root.passwordCommand !== config.passwordCommand
                 || root.displayLimit !== config.displayLimit;
 
         root.accountName = config.accountName;
+        root.authMethod = config.authMethod;
+        root.clientId = config.clientId;
         root.imapHost = host;
         root.imapPort = port;
         root.security = config.security;
@@ -189,6 +194,8 @@ Singleton {
                 action: "list",
                 accounts: [{
                     name: root.accountName,
+                    authMethod: root.authMethod,
+                    clientId: root.clientId,
                     host: root.imapHost,
                     port: root.imapPort,
                     security: root.security,
@@ -233,6 +240,8 @@ Singleton {
                 messageId: readProc.messageId,
                 account: {
                     name: root.accountName,
+                    authMethod: root.authMethod,
+                    clientId: root.clientId,
                     host: root.imapHost,
                     port: root.imapPort,
                     security: root.security,
