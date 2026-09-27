@@ -127,6 +127,15 @@ def connect_to_imap(account):
                     "Gmail IMAP OAuth failed; verify the account, consent and IMAP access") from None
         else:
             conn.login(username, password)
+            # NetEase requires RFC 2971 client identification before SELECT.
+            if host.lower() in ("imap.163.com", "imap.126.com", "imap.yeah.net"):
+                if b"ID" not in conn.capabilities and "ID" not in conn.capabilities:
+                    raise RuntimeError("NetEase IMAP server does not advertise ID")
+                imaplib.Commands["ID"] = ("AUTH", "SELECTED")
+                status, _ = conn._simple_command(
+                    "ID", '("name" "DMS Mail Reader" "version" "1.0" "vendor" "DMS")')
+                if status != "OK":
+                    raise RuntimeError("NetEase IMAP rejected client identification")
         return conn
     except Exception:
         if conn is not None:
@@ -273,12 +282,14 @@ def check_account_list(account):
 
 
 def html_to_text(content):
-    """Convert HTML to plain text."""
-    content = re.sub(r"(?is)<(script|style).*?>.*?</\1>", "", content)
-    content = re.sub(r"(?i)<br\s*/?>", "\n", content)
-    content = re.sub(r"(?i)</p\s*>", "\n", content)
+    """Extract readable text without rendering remote HTML or tracking images."""
+    content = re.sub(r"(?is)<!--.*?-->", "", content)
+    content = re.sub(r"(?is)<(script|style|head|svg|noscript)\b[^>]*>.*?</\1\s*>", "", content)
+    content = re.sub(r"(?i)<(?:br|/p|/div|/tr|/li|/h[1-6])\b[^>]*>", "\n", content)
     content = re.sub(r"<[^>]+>", " ", content)
-    return html.unescape(content)
+    lines = [re.sub(r"[^\S\n]+", " ", line).strip()
+             for line in html.unescape(content).splitlines()]
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
 
 
 def get_part_content(part):
@@ -318,11 +329,12 @@ def extract_body(message):
             html_parts.append(html_to_text(content))
 
     body = "\n\n".join(part for part in plain_parts if part.strip())
-    if not body.strip():
-        body = "\n\n".join(part for part in html_parts if part.strip())
-    if not body.strip():
-        return "[No text content available]"
-    return body
+    if body.strip():
+        return body, False
+    body = "\n\n".join(part for part in html_parts if part.strip())
+    if body.strip():
+        return body, True
+    return "[No text content available]", bool(html_parts)
 
 
 def safe_filename(value):
@@ -482,6 +494,7 @@ def read_account_message(account, message_id):
         "date": "",
         "subject": "",
         "body": "",
+        "bodyIsHtml": False,
         "attachments": [],
         "markedSeen": False,
     }
@@ -513,7 +526,7 @@ def read_account_message(account, message_id):
         result["to"] = decode_mime(message.get("To", ""))
         result["date"] = format_date(message.get("Date", ""))
         result["subject"] = decode_mime(message.get("Subject", "")) or "(no subject)"
-        result["body"] = extract_body(message)
+        result["body"], result["bodyIsHtml"] = extract_body(message)
         result["attachments"] = save_attachments(message, account, message_id)
 
         # Mark Seen only after parsing and attachment extraction succeeded.

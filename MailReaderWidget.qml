@@ -124,7 +124,7 @@ PluginComponent {
 
     popoutContent: Component {
         MailReaderPopout {
-            maxPopoutHeight: root.popoutHeight
+            maxPopoutHeight: detailMode ? 680 : root.popoutHeight
         }
     }
     popoutWidth: 420

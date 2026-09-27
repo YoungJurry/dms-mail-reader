@@ -405,6 +405,7 @@ PopoutComponent {
                             font.weight: Font.Bold
                             color: Theme.surfaceText
                             wrapMode: Text.WordWrap
+                            elide: Text.ElideNone
                         }
 
                         StyledText {
@@ -429,6 +430,16 @@ PopoutComponent {
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
                             wrapMode: Text.WordWrap
+                        }
+
+                        StyledText {
+                            width: parent.width
+                            visible: Services.MailService.currentEmail && Services.MailService.currentEmail.bodyIsHtml === true
+                            text: "HTML email shown as text. View it in webmail for the original layout and images."
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                            wrapMode: Text.WordWrap
+                            elide: Text.ElideNone
                         }
 
                         Column {
@@ -497,23 +508,18 @@ PopoutComponent {
                             width: parent.width
                             radius: Theme.cornerRadius
                             color: Theme.surfaceContainerHigh
-                            implicitHeight: Math.min(420, Math.max(120, mailBody.implicitHeight + Theme.spacingM * 2))
+                            implicitHeight: mailBody.implicitHeight + Theme.spacingM * 2
 
-                            DankFlickable {
-                                anchors.fill: parent
-                                anchors.margins: Theme.spacingM
-                                contentWidth: width
-                                contentHeight: mailBody.implicitHeight
-                                clip: true
-
-                                StyledText {
-                                    id: mailBody
-                                    width: parent.width
-                                    text: Services.MailService.currentEmail ? Services.MailService.currentEmail.body : ""
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceText
-                                    wrapMode: Text.Wrap
-                                }
+                            StyledText {
+                                id: mailBody
+                                x: Theme.spacingM
+                                y: Theme.spacingM
+                                width: parent.width - Theme.spacingM * 2
+                                text: Services.MailService.currentEmail ? Services.MailService.currentEmail.body : ""
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceText
+                                wrapMode: Text.WordWrap
+                                elide: Text.ElideNone
                             }
                         }
                     }

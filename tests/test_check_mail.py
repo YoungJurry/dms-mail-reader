@@ -112,6 +112,57 @@ class CheckMailTests(unittest.TestCase):
         self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
         self.assertTrue(context.check_hostname)
         connection.login.assert_called_once_with("me@example.com", "secret")
+        connection._simple_command.assert_not_called()
+
+    def test_netease_sends_id_after_login(self):
+        connection = mock.Mock(capabilities=(b"IMAP4rev1", b"ID"))
+        connection._simple_command.return_value = ("OK", [b""])
+        account = self.account(host="imap.163.com", username="me@163.com")
+        with mock.patch.object(check_mail, "get_password", return_value="secret"), \
+                mock.patch.object(check_mail.imaplib, "IMAP4_SSL", return_value=connection):
+            self.assertIs(check_mail.connect_to_imap(account), connection)
+        connection.login.assert_called_once_with("me@163.com", "secret")
+        args = connection._simple_command.call_args.args
+        self.assertEqual(args[0], "ID")
+        self.assertIn('"name" "DMS Mail Reader"', args[1])
+        methods = [call[0] for call in connection.mock_calls]
+        self.assertLess(methods.index("login"), methods.index("_simple_command"))
+
+    def test_netease_rejects_missing_id_capability(self):
+        connection = mock.Mock(capabilities=(b"IMAP4rev1",))
+        with mock.patch.object(check_mail, "get_password", return_value="secret"), \
+                mock.patch.object(check_mail.imaplib, "IMAP4_SSL", return_value=connection):
+            with self.assertRaisesRegex(RuntimeError, "does not advertise ID"):
+                check_mail.connect_to_imap(self.account(host="imap.163.com"))
+        connection._simple_command.assert_not_called()
+        connection.shutdown.assert_called_once()
+
+    def test_html_mail_removes_layout_whitespace_and_marks_format(self):
+        msg = EmailMessage()
+        msg.set_content('<html><head><style>hidden</style></head><body><p>Hello&nbsp;world</p>'
+                        + ' ' * 500 + '<div>More<br>content</div><img src="https://example.com/track">'
+                        + '<script>bad()</script></body></html>', subtype="html")
+        body, is_html = check_mail.extract_body(msg)
+        self.assertTrue(is_html)
+        self.assertEqual(body, "Hello world\nMore\ncontent")
+        self.assertNotIn("hidden", body)
+        self.assertNotIn("bad()", body)
+        self.assertNotIn("track", body)
+
+    def test_plain_mail_keeps_original_text(self):
+        msg = EmailMessage()
+        msg.set_content("Keep  spaces\n\nAnd lines")
+        self.assertEqual(check_mail.extract_body(msg), ("Keep  spaces\n\nAnd lines\n", False))
+
+    def test_html_format_is_reported_in_read_result(self):
+        msg = EmailMessage()
+        msg.set_content("<p>One</p><p>Two</p>", subtype="html")
+        connection = ReadConnection(msg.as_bytes())
+        with mock.patch.object(check_mail, "connect_to_imap", return_value=connection):
+            result = check_mail.read_account_message(self.account(), "42")
+        self.assertTrue(result["ok"])
+        self.assertTrue(result["bodyIsHtml"])
+        self.assertEqual(result["body"], "One\nTwo")
 
     def test_gmail_connection_uses_xoauth2_without_password(self):
         connection = mock.Mock()

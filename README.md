@@ -86,6 +86,10 @@ secret-tool lookup service imap account you@example.com
 
 Do not put an inline password in this field: plugin settings are stored on disk. Keep the secret in a credential manager and let the command retrieve it at runtime.
 
+### NetEase 163 personal mail
+
+Enable IMAP and create a **client authorization code** under NetEase webmail → Settings → POP3/SMTP/IMAP. Select `IMAP password command`, set host `imap.163.com`, port `993`, security `SSL/TLS`, full `@163.com` username, and a command that returns the **authorization code**, not the web login password. The helper sends the IMAP `ID` extension after login because NetEase rejects unidentified clients with `Unsafe Login`. Other IMAP providers are unaffected.
+
 ### Gmail OAuth2 (personal Gmail accounts)
 
 **Yes, this requires the Gmail OAuth code in this version of the plugin.** Ordinary Gmail account passwords cannot be used as an IMAP `Password Command`; Google app passwords require two-step verification. OAuth does **not** require enabling two-step verification, though Google may ask you to confirm a sign-in. The plugin connects to Gmail with IMAP XOAUTH2; it does not use the Gmail API. You need your own Google OAuth client ID; there is no built-in shared Google app registration. The plugin uses the broad [`https://mail.google.com/` permission](https://developers.google.com/workspace/gmail/imap/xoauth2-protocol) mandated by Gmail IMAP, including access beyond reading. Only grant this to a client you trust. Personal Gmail accounts have IMAP enabled automatically; [there is no IMAP switch to turn on](https://support.google.com/mail/answer/7126229).
@@ -123,6 +127,7 @@ Do not put an inline password in this field: plugin settings are stored on disk.
 - Listing messages is read-only and fetches visible headers in one batch
 - Notification tracking uses IMAP `UIDVALIDITY` and the latest UID, independently of the display limit
 - Opening a message fetches content with `BODY.PEEK[]`, then explicitly marks that message as read with `\\Seen`
+- HTML-only mail is shown as compact plain text: external images and original webmail layout are not rendered (avoiding tracking pixels). Open webmail for the full design. The detail view grows independently of the list and scrolls as one page.
 - Messages larger than 50 MB are rejected before download to protect memory and temporary storage
 - Attachments are stored in an owner-only runtime cache, removed after 24 hours, and opened via `xdg-open` when clicked
 - The plugin polls for new mail at the configured interval, or manually when `Check Interval = 0`
